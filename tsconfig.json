@@ -1,0 +1,21 @@
+{
+  "compilerOptions": {
+    "baseUrl": "./",
+    "target": "ES6",
+    "module": "ESNext",
+    "outDir": "./dist",
+    "rootDir": "./src",
+    "strict": true,
+    "allowSyntheticDefaultImports": true,
+    "moduleResolution":"node",
+    "allowImportingTsExtensions": false,
+    "noEmit": false,
+    "resolveJsonModule": true,
+    "types": ["node", "express"],
+    "paths": {
+      "*": ["*"]
+    }
+  },
+  "include": ["src/**/*.ts"],
+  "exclude": ["node_modules"]
+}
