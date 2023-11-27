@@ -50,8 +50,6 @@ const getContainerNames = () => {
                 reject(new Error('Failed to get container names'));
             }
         });
-
-        console.log('getContainerNames() output: ', output);
     });
 };
 
@@ -60,7 +58,6 @@ export const recordLogs = async () => {
     try {
         const containerIds = await getRunningContainers();
         const containerNames = await getContainerNames();
-        console.log('containerIds: ', containerNames);
 
         // Check if containerIds is defined
         if (!containerIds) {
@@ -73,7 +70,6 @@ export const recordLogs = async () => {
         const sinceTimestamp = new Date().toISOString();
 
         containers.forEach((container) => {
-            console.log(`Recording logs for container: ${container.name}`);  // Add this line
             // Create a directory for the container if it doesn't exist
             const containerLogDirectory = `${logDirectory}/${container.name}`;
             if (!fs.existsSync(containerLogDirectory)) {

@@ -9,9 +9,13 @@ const server = express();
 
 import {recordLogs} from './config/RecordLogs';
 
+import logRoutes from './app/Routes/LogRoutes';
+
 server.use(bodyParser.json());
 server.use(cors());
 server.use(cookieParser());
+
+server.use("/log", logRoutes)
 
 recordLogs();
 
