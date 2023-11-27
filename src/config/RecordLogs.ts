@@ -25,7 +25,7 @@ function recordLogsFromAllContainers() {
         // Create a Winston logger with DailyRotateFile transport
         const logger = createLogger({
             transports: [
-                new transports.DailyRotateFile({
+                new DailyRotateFile({
                     filename: `${containerLogsDir}/%DATE%.log`,
                     datePattern: 'YYYY-MM-DD',
                     zippedArchive: true,
@@ -37,9 +37,11 @@ function recordLogsFromAllContainers() {
 
         // Execute Docker logs command and write the output to the logger
         const logsCommand = `docker logs ${containerName}`;
-        const logs = execSync(logsCommand).toString();
-        logger.info(logs);
-
+        const logs = execSync(logsCommand).toString().split('\n');
+        logs.forEach(log => {
+            logger.info(log);
+        });
+        
         // Watch for changes in the log file
         const logFilePath = `${containerLogsDir}/%DATE%.log`;
         fs.watch(logFilePath, (eventType, filename) => {
@@ -51,5 +53,7 @@ function recordLogsFromAllContainers() {
     });
 }
 
+
+
 // Example usage
-export default recordLogsFromAllContainers;
+export { recordLogsFromAllContainers}
