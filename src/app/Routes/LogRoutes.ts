@@ -17,5 +17,6 @@ if(process.env.NODE_ENV === 'production') {
 router.get('/getFolderList', LogController.getFolderList);
 router.get('/getLogList/:folderName', LogController.getLogsList);
 router.get('/getLog/:folderName/:logName', LogController.getLog);
+router.get('/searchForNewContainer', LogController.searchForNewContainer);
 
 export default router

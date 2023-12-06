@@ -16,6 +16,16 @@ class LogController {
         const {success, code, message, log} = await LogService.getLog(req.params.folderName, req.params.logName);
         return res.status(code).json({success, message, log});
     }
+
+    async searchForNewContainer(req: Request, res: Response) {
+        try{
+            const result = await LogService.searchforNewContainers();
+            return res.status(200).json(result);
+        } catch (error) {
+            console.error(error);
+            res.status(500).json({success: false, message: "Internal server error"});
+        }
+    }    
 }
 
 export default new LogController();

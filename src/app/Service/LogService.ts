@@ -1,4 +1,5 @@
 import fs from 'fs/promises';
+import { recordLogs } from '../../config/RecordLogs.js';
 
 class LogService {
     async getFolderList() {
@@ -79,6 +80,16 @@ class LogService {
                 code: 500,
                 message: "Internal server error"
             }
+        }
+    }
+
+    async searchforNewContainers() {
+        try {
+            recordLogs();
+            return "Recording logs for new containers"
+        } catch (error) {
+            console.error(error);
+            return 
         }
     }
 }

@@ -1,123 +1,73 @@
-import { spawn } from 'child_process';
 import fs from 'fs';
 import winston from 'winston';
 import DailyRotateFile from 'winston-daily-rotate-file';
-import readline from 'readline';
+import Docker from 'dockerode';
+import stripAnsi from 'strip-ansi';
+import { StringDecoder } from 'string_decoder';
 
 const logDirectory = "./logs";
+const docker = new Docker();
 
 // Get a list of running Docker containers
-const getRunningContainers = () => {
-    try{
-        return new Promise<string[]>((resolve, reject) => {
-            const dockerProcess = spawn('docker', ['ps', '-q']);
-    
-            let output = '';
-    
-            dockerProcess.stdout.on('data', (data) => {
-                output += data.toString();
-            });
-    
-            dockerProcess.on('close', (code) => {
-                if (code === 0) {
-                    const containerIds = output.trim().split('\n');
-                    resolve(containerIds);
-                } else {
-                    reject(new Error('Failed to get running containers'));
-                }
-            });
-        });
-    } catch (error) {
-        console.error(error);
-    }
+const getRunningContainers = async () => {
+  try {
+    const containers = await docker.listContainers();
+    return containers.map(container => ({id: container.Id, name: container.Names[0]}));
+  } catch (error) {
+    console.error(error);
+  }
 };
 
-const getContainerNames = () => {
-    return new Promise<string[]>((resolve, reject) => {
-        const dockerProcess = spawn('docker', ['ps', '-a', '--format', '{{.Names}}']);
+// Record logs from the running containers
+const recordLogs = async () => {
+  const containers = await getRunningContainers();
 
-        let output = '';
+  const decoder = new StringDecoder('utf8');
 
-        dockerProcess.stdout.on('data', (data) => {
-            output += data.toString();
-        });
+  if(containers === undefined){
+    console.error("No containers found");
+    return;
+  }
 
-        dockerProcess.on('close', (code) => {
-            if (code === 0) {
-                const containerNames = output.trim().split('\n');
-                resolve(containerNames);
-            } else {
-                reject(new Error('Failed to get container names'));
-            }
-        });
+  for (const containerInfo of containers) {
+    const container = docker.getContainer(containerInfo.id);
+    const containerLogDirectory = `${logDirectory}/${containerInfo.name}`;
+    console.log(`Recording logs for ${containerInfo.name}`);
+
+    if (!fs.existsSync(containerLogDirectory)) {
+      fs.mkdirSync(containerLogDirectory, { recursive: true });
+    }
+
+    const logger = winston.createLogger({
+        format: winston.format.printf(({message}) => {
+            return `${message}`;
+        }),
+        transports: [
+            new DailyRotateFile({
+                dirname: containerLogDirectory,
+                filename: '%DATE%.log',
+                datePattern: 'DD-MM-YYYY',
+                zippedArchive: true,
+                maxSize: '20m',
+                maxFiles: '14d',
+            }),
+        ],
     });
+
+    const stream = await container.logs({
+      follow: true,
+      stdout: true,
+      stderr: true,
+      since: Math.floor(Date.now() / 1000) // Unix timestamp of current time
+    });
+      
+    stream.on('data', data => {
+        let cleanLine = stripAnsi(data.toString());
+        cleanLine = cleanLine.replace(/[\x00-\x1F\x7F-\x9F]/g, '');
+        cleanLine = cleanLine.replace(/�/g, '');
+        logger.info(cleanLine.trim());
+    });
+  }
 };
 
-// Record logs from each Docker container
-export const recordLogs = async () => {
-    try {
-        const containerIds = await getRunningContainers();
-        const containerNames = await getContainerNames();
-
-        // Check if containerIds is defined
-        if (!containerIds) {
-            console.error('No running containers found');
-            return;
-        }
-
-        const containers = containerIds.map((id, index) => ({ id, name: containerNames[index] }));
-
-        const sinceTimestamp = new Date().toISOString();
-
-        containers.forEach((container) => {
-            // Create a directory for the container if it doesn't exist
-            const containerLogDirectory = `${logDirectory}/${container.name}`;
-            if (!fs.existsSync(containerLogDirectory)) {
-                console.log(`Creating directory: ${containerLogDirectory}`);  // Add this line
-                try {
-                    fs.mkdirSync(containerLogDirectory, { recursive: true });
-                } catch (error) {
-                    console.error(`Failed to create directory: ${error}`);  // Add this line
-                }
-            }
-        
-            const containerLogger = winston.createLogger({
-                format: winston.format.printf(({ message }) => message),
-                transports: [
-                    new DailyRotateFile({
-                        dirname: containerLogDirectory,
-                        filename: '%DATE%.log',
-                        datePattern: 'DD-MM-YYYY',
-                        zippedArchive: true,
-                        maxSize: '20m',
-                        maxFiles: '14d',
-                    }),
-                ],
-            });
-        
-            const logProcess = spawn('docker', ['logs', '-f', '--since', sinceTimestamp, container.id]);
-        
-            const logLineReader = readline.createInterface({
-                input: logProcess.stdout,
-                output: process.stdout,
-                terminal: false
-            });
-        
-            logLineReader.on('line', (line) => {
-                containerLogger.info(line.trim());
-            });
-        
-            const errorLineReader = readline.createInterface({
-                input: logProcess.stderr,
-                output: process.stdout,
-                terminal: false
-            });
-        
-            errorLineReader.on('line', (line) => {
-                containerLogger.error(line.trim());
-            });
-        });
-    } catch (error) {
-        console.error(error);
-    }
-};
+export {recordLogs}
