@@ -1,5 +1,5 @@
 import { Request, Response } from 'express';
-import LogService from '../Service/LogService';
+import LogService from '../Service/LogService.js';
 
 class LogController {
     async getFolderList(req: Request, res: Response) {

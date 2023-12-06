@@ -7,9 +7,9 @@ dotenv.config();
 
 const server = express();
 
-import {recordLogs} from './config/RecordLogs';
+import {recordLogs} from './config/RecordLogs.js';
 
-import logRoutes from './app/Routes/LogRoutes';
+import logRoutes from './app/Routes/LogRoutes.js';
 
 server.use(bodyParser.json());
 server.use(cors());

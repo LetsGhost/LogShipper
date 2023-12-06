@@ -2,10 +2,10 @@ import express from 'express';
 import dotenv from 'dotenv';
 dotenv.config();
 
-import AuthenticateToken from '../Middleware/AuthenticateToken';
-import AuthenticateRole from '../Middleware/AuthenticateRole';
+import AuthenticateToken from '../Middleware/AuthenticateToken.js';
+import AuthenticateRole from '../Middleware/AuthenticateRole.js';
 
-import LogController from '../Controller/LogController';
+import LogController from '../Controller/LogController.js';
 
 const router = express.Router();
 
