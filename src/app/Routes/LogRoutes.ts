@@ -9,7 +9,7 @@ import LogController from '../Controller/LogController.js';
 
 const router = express.Router();
 
-if(process.env.NODE_ENV === 'production') {
+if(process.env.ENV === 'production') {
     router.use(AuthenticateToken.authenticateToken);
     router.use(AuthenticateRole.authenticateRole);
 }
